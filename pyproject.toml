@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "sanipass"
+version = "0.1.0"
+description = ""
+authors = ["Adam Brown <coffeegist@gmail.com>"]
+readme = "README.md"
+homepage = "https://github.com/coffeegist/sanipass"
+repository = "https://github.com/coffeegist/sanipass"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.10"
+rich = "^12.5.1"
+typer = "^0.6.1"
+typing-extensions = "^4.6.3"
+pytesseract = "^0.3.10"
+pillow = "^9.5.0"
+
+[tool.poetry.dev-dependencies]
+pylint = "^2.13"
+pytest = "^7.1.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+sanipass = "sanipass.__main__:app"
