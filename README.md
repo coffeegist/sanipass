@@ -1,6 +1,14 @@
 # sanipass
 
-Sanipass is a tool that takes in a list of sensitive information and attempts to sanitize screenshots containing that information for reports and other public consumption.
+Sanipass is a tool that takes in a list of sensitive information and attempts to sanitize screenshots containing that information for reports and other public consumption. The sanitized screenshots will be saved alongside the original screenshot with a `-sanitized` suffix.
+
+**Before**
+
+![Before](./docs/images/example.png)
+
+**After**
+
+![After](./docs/images/example-sanitized.png)
 
 ## Install
 
@@ -9,7 +17,6 @@ Please ensure that the pre-requisites are also installed before attempting to ru
 
 ### Pre-requisites
 - Tesseract
-- Python 3.9 < 3.11
 
 #### Installing Tesseract
 
@@ -32,6 +39,7 @@ git clone https://github.com/coffeegist/sanipass
 cd sanipass
 poetry install
 poetry run sanipass -s my-password-list.txt -i report-images/
+```
 
 ## Examples
 
