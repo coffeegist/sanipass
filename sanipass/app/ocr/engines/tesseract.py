@@ -2,7 +2,7 @@ import string
 
 import pytesseract
 from pytesseract import Output
-from sanipass.app.models.ocr_entry import OCREntry
+from sanipass.app.image.models.ocr_entry import OCREntry
 
 from sanipass.logger import logger
 

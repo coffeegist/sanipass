@@ -1,6 +1,6 @@
 import typer
 from pathlib import Path
-from sanipass.app.models.image import SanipassImage
+from sanipass.app.image.models.sanipass_image import SanipassImage
 from sanipass.app.ocr.ocr_processor import OCRProcessor
 from sanipass.logger import init_logger, logger
 from sanipass import __version__
