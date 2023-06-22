@@ -103,7 +103,7 @@ def main(
             logger.info(f'Found {number_of_sensitive_entries} sensitive OCR entries in {file}')
 
             # Redact sensitive data
-            image.redact_sensitive_data(fill_color=None)
+            image.redact_sensitive_data()
 
             # Save sanitized image
             image.save(
