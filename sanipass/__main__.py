@@ -1,14 +1,8 @@
 import typer
-import string
-# import matplotlib.pyplot as plt
-# import keras_ocr
-import pytesseract
-from pytesseract import Output
-from PIL import Image
-from PIL import ImageDraw
-from typing_extensions import Annotated
 from pathlib import Path
-from sanipass.logger import init_logger, logger, console
+from sanipass.app.models.image import SanipassImage
+from sanipass.app.ocr.ocr_processor import OCRProcessor
+from sanipass.logger import init_logger, logger
 from sanipass import __version__
 
 app = typer.Typer(
@@ -18,98 +12,44 @@ app = typer.Typer(
     pretty_exceptions_show_locals=False
 )
 
-def blacklisted_characters():
-    return '\'"`;:/.,\\|[]{}()'
 
-def whitelisted_characters():
-    standard_set = string.ascii_letters + string.digits # + string.punctuation
-    for character in blacklisted_characters():
-        standard_set = standard_set.replace(character, '')
+def get_files_to_process(input_files:Path):
+    images = []
 
-    return standard_set
+    if input_files.is_dir():
+        for file in input_files.iterdir():
+            if file.is_file():
+                images.append(file)
+    else:
+        images.append(input_files)
 
-def sanitize_screenshot(
-        image_path, sensitive_data_file:str, confidence_threshold:int=0
-    ):
+    return images
 
-    sanitized = False
 
-    # Load the image
-    image = Image.open(image_path)
-    draw = ImageDraw.Draw(image)
-
+def load_sensitive_data(input_file):
     # Initialize sensitive data
     sensitive_data = []
-    with open(sensitive_data_file) as f:
+
+    logger.info(f"Loading sensitive data from {input_file}")
+    with open(input_file) as f:
         sensitive_data = f.read().splitlines()
-    logger.debug(sensitive_data)
-
-    # Perform OCR on the image
-    config = f'--user-words {sensitive_data_file} --user-patterns {sensitive_data_file} --psm 6 -c preserve_interword_spaces=1'
-    config += f' tessedit_char_whitelist=\'{whitelisted_characters()}\''
-    logger.debug(f'Config: {config}')
-    ocr_data = pytesseract.image_to_data(image, output_type=Output.DICT, config=config)
-    logger.debug(ocr_data)
-
-    # Iterate through the OCR text and locate the hash patterns
-    n_boxes = len(ocr_data['text'])
-    for i in range(n_boxes):
-        if int(ocr_data['conf'][i]) > confidence_threshold:
-            ocr_text = ocr_data['text'][i]
-            for sensitive_word in sensitive_data:
-                if sensitive_word in ocr_text:
-                    sanitized = True
-                    logger.info(f'Found sensitive data: {ocr_text}')
-
-                    if sensitive_word == ocr_text:
-                        draw.rectangle([(ocr_data['left'][i], ocr_data['top'][i]), (ocr_data['left'][i] + ocr_data['width'][i], ocr_data['top'][i] + ocr_data['height'][i])], outline="red", fill="black")
-                    else:
-                        # Get the coordinates of the word
-                        left = ocr_data['left'][i]
-                        top = ocr_data['top'][i]
-                        height = ocr_data['height'][i]
-
-                        # Calculate the bounding box of the sensitive word
-                        text_start = ocr_text.index(sensitive_word)
-                        text_end = text_start + len(sensitive_word)
-
-                        word_left = left
-                        character_width = ocr_data['width'][i] / len(ocr_text)
-                        for j in range(text_start):
-                            word_left += character_width
-
-                        word_top = top
-                        word_width = character_width * len(sensitive_word)
-                        word_height = height
-
-                        # Draw a rectangle around the word
-                        draw.rectangle([(word_left, word_top), (word_left + word_width, word_top + word_height)], outline="red", fill="black")
 
 
-
-    if sanitized:
-        # Calculate new image name
-        p = Path(image_path)
-        new_name = str(p.absolute()).replace(p.suffix, f'-sanitized{p.suffix}')
-        logger.info(f'Saving sanitized image to: {new_name}')
-        # Save the modified image
-        image.save(new_name)
-    else:
-        logger.info('No sensitive data found')
+    return sensitive_data
 
 
 @app.command(no_args_is_help=True, help='sanipass help!')
 def main(
-    image: Path = typer.Option(
+    input: Path = typer.Option(
         ...,
-        '--image',
+        '--input',
         '-i',
         exists=True,
         file_okay=True,
         dir_okay=True,
         readable=True,
         resolve_path=True,
-        help='Image to process'
+        help='Image or directory of images to process'
     ),
     sensitive_data_file: Path = typer.Option(
         ...,
@@ -122,19 +62,54 @@ def main(
         resolve_path=True,
         help='Sensitive data to sanitize from screenshots'
     ),
+    overwrite: bool = typer.Option(
+        False,
+        '--overwrite',
+        help='Overwrite existing sanitized images'
+    ),
     debug: bool = typer.Option(False, '--debug', help='Enable [green]DEBUG[/] output')):
 
     init_logger(debug)
 
-    logger.info(f'Loading sensitive data from: {sensitive_data_file}')
+    sensitive_data = load_sensitive_data(sensitive_data_file)
 
-    if image.is_dir():
-        for file in image.iterdir():
-            if file.is_file():
-                logger.info(f'Sanitizing Image: {file}')
-                sanitize_screenshot(str(file), str(sensitive_data_file))
-    else:
-        sanitize_screenshot(str(image), str(sensitive_data_file))
+    ocr_processor = OCRProcessor(
+        #sensitive_data_file=str(sensitive_data_file),
+        user_words=str(sensitive_data_file),
+        user_patterns=str(sensitive_data_file))
+
+    for file in get_files_to_process(input):
+        logger.info(f'Sanitizing Image: {file}')
+
+        image = SanipassImage(str(file))
+
+        # Process OCR data
+        image.add_ocr_entries(ocr_processor.get_ocr_data(image.path))
+        logger.info(f'Found {len(image.ocr_entries)} OCR blocks in {image.path}')
+
+        # Find sensitive data
+        for ocr_entry in image.ocr_entries:
+            for data in sensitive_data:
+                if data in ocr_entry.text:
+                    logger.debug(f'Found sensitive data in line: {ocr_entry.text}')
+                    ocr_entry.sensitive = True
+                    ocr_entry.sensitive_match = data
+
+        number_of_sensitive_entries = len(image.get_sensitive_ocr_entries())
+        if number_of_sensitive_entries == 0:
+            logger.info(f'No sensitive data found in {file}')
+            continue
+        else:
+            logger.info(f'Found {number_of_sensitive_entries} sensitive OCR entries in {file}')
+
+            # Redact sensitive data
+            image.redact_sensitive_data(fill_color=None)
+
+            # Save sanitized image
+            image.save(
+                path=str(file.absolute()).replace(
+                    file.suffix, f'-sanitized{file.suffix}'
+                ), overwrite=overwrite)
 
 
 if __name__ == '__main__':
