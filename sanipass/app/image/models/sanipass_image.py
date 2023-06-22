@@ -2,7 +2,7 @@ from typing import List
 from pathlib import Path
 
 from sanipass.app.image.models.ocr_entry import OCREntry
-from sanipass.app.image.engines.PIL import PIL
+from sanipass.app.image.engines.pil import PIL
 from sanipass.logger import logger
 
 class SanipassImage:
