@@ -1,17 +1,35 @@
 from typing import List
 from pathlib import Path
+import cv2
+import numpy as np
 
 from sanipass.app.image.models.ocr_entry import OCREntry
+from sanipass.app.image.engines.opencv import OpenCV
 from sanipass.app.image.engines.pil import PIL
 from sanipass.logger import logger
 
 class SanipassImage:
 
-    def __init__(self, path):
+    def __init__(self, path:str):
         self.path = path
         self.engine = PIL
         self.image = self.engine.open_image(path)
         self.ocr_entries = []
+
+
+    def _get_intermediate_filename(self, intermediate_step):
+        path= Path(self.path)
+        return str(path.absolute()).replace(
+            path.suffix, f'-{intermediate_step}{path.suffix}'
+        )
+
+
+    def perform_preprocessing(self, save_preprocessing_image=False):
+        #self.image = cv2.imread(self.image)
+        self.image = OpenCV.perform_preprocessing(self.image)
+
+        if save_preprocessing_image:
+            self.engine.save_image(self.image, self._get_intermediate_filename('preprocessed'))
 
 
     def add_ocr_entries(self, ocr_entries:List):
@@ -29,9 +47,11 @@ class SanipassImage:
 
 
     def redact_entry(self, ocr_entry:OCREntry, outline_color="red", fill_color="black"):
+        #image = self.engine.open_image(self.path)
+
         if ocr_entry.sensitive_match == ocr_entry.text:
             logger.debug(f'Redacting exact match {ocr_entry.text}')
-            self.engine.draw_rectangle(
+            self.image = self.engine.draw_rectangle(
                 self.image,
                 left=ocr_entry.left,
                 top=ocr_entry.top,
@@ -58,7 +78,7 @@ class SanipassImage:
             word_height = height
 
             # Draw a rectangle around the word
-            self.engine.draw_rectangle(
+            self.image = self.engine.draw_rectangle(
                 self.image,
                 left=word_left,
                 top=word_top,

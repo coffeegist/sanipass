@@ -74,7 +74,6 @@ def main(
     sensitive_data = load_sensitive_data(sensitive_data_file)
 
     ocr_processor = OCRProcessor(
-        #sensitive_data_file=str(sensitive_data_file),
         user_words=str(sensitive_data_file),
         user_patterns=str(sensitive_data_file))
 
@@ -82,9 +81,10 @@ def main(
         logger.info(f'Sanitizing Image: {file}')
 
         image = SanipassImage(str(file))
+        image.perform_preprocessing(save_preprocessing_image=True)
 
         # Process OCR data
-        image.add_ocr_entries(ocr_processor.get_ocr_data(image.path))
+        image.add_ocr_entries(ocr_processor.get_ocr_data(image.image))
         logger.info(f'Found {len(image.ocr_entries)} OCR blocks in {image.path}')
 
         # Find sensitive data

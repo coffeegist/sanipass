@@ -15,8 +15,8 @@ class TesseractOCR:
 
         self.user_words = user_words
         self.user_patterns = user_patterns
-        self.psm = '6'
-        self.whitelisted_characters = self._get_whitelisted_characters()
+        self.psm = '10'
+        self.whitelisted_characters = None #self._get_whitelisted_characters()
         self.confidence_threshold = confidence_threshold
         self.config = self._get_configuration()
 
@@ -44,7 +44,7 @@ class TesseractOCR:
           config += f' tessedit_char_whitelist=\'{self.whitelisted_characters}\''
 
         config += f' --psm {self.psm}'
-        config += ' -c preserve_interword_spaces=1' # Unsure on this
+        config += ' /home/kali/Development/github.com/coffeegist/sanipass/config' # Unsure on this
 
         return config
 
@@ -54,7 +54,7 @@ class TesseractOCR:
         ocr_entries = []
 
         logger.debug(f'TesseractOCR.get_ocr_data:  Tesseract Config: {self.config}')
-        logger.info(f'TesseractOCR.get_ocr_data:  Processing {image}')
+        logger.info(f'TesseractOCR.get_ocr_data:  Processing image...')
         ocr_data = pytesseract.image_to_data(image, output_type=Output.DICT, config=self.config)
 
         for entry in range(len(ocr_data['text'])):
