@@ -8,7 +8,7 @@ from sanipass.logger import logger
 class SanipassImage:
 
     def __init__(self, path):
-        self.path = path
+        self.path:str = path
         self.engine = PIL
         self.image = self.engine.open_image(path)
         self.ocr_entries = []
