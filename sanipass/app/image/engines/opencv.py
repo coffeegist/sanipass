@@ -9,11 +9,26 @@ class OpenCV:
 
 
     @staticmethod
+    def _convert_to_gray(image):
+        try:
+            return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        except:
+            return image
+
+
+    @staticmethod
+    def invert(image):
+        image = OpenCV._convert_to_gray(image)
+        return (255-image)
+
+
+    @staticmethod
     def otsu_binarization(image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         _, imgf = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         return imgf
+
 
     @staticmethod
     def otsu_inv_binarization(image):

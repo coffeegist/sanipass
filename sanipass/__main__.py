@@ -81,7 +81,19 @@ def main(
         logger.info(f'Sanitizing Image: {file}')
 
         image = SanipassImage(str(file))
-        image.perform_preprocessing(save_preprocessing_image=True)
+        image.invert()
+        image.add_ocr_entries(ocr_processor.get_ocr_data(image.image))
+        image.save(
+            path=str(file.absolute()).replace(
+                    file.suffix, f'-inverted{file.suffix}'
+                ), overwrite=overwrite)
+        image.invert()
+        image.save(
+            path=str(file.absolute()).replace(
+                    file.suffix, f'-unverted{file.suffix}'
+                ), overwrite=overwrite)
+
+        #image.perform_preprocessing(save_preprocessing_image=True)
 
         # Process OCR data
         image.add_ocr_entries(ocr_processor.get_ocr_data(image.image))

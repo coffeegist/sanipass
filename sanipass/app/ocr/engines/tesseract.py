@@ -15,7 +15,7 @@ class TesseractOCR:
 
         self.user_words = user_words
         self.user_patterns = user_patterns
-        self.psm = '10'
+        self.psm = '6'
         self.whitelisted_characters = None #self._get_whitelisted_characters()
         self.confidence_threshold = confidence_threshold
         self.config = self._get_configuration()

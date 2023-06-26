@@ -24,6 +24,10 @@ class SanipassImage:
         )
 
 
+    def invert(self):
+        self.image = OpenCV.invert(self.image)
+
+
     def perform_preprocessing(self, save_preprocessing_image=False):
         #self.image = cv2.imread(self.image)
         self.image = OpenCV.perform_preprocessing(self.image)
@@ -33,6 +37,7 @@ class SanipassImage:
 
 
     def add_ocr_entries(self, ocr_entries:List):
+        logger.debug(f"Adding {len(ocr_entries)} to {self.path}: \n{[entry.text for entry in ocr_entries]}")
         self.ocr_entries.extend(ocr_entries)
 
 
