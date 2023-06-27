@@ -1,5 +1,7 @@
+import math
 import typer
 from pathlib import Path
+from Levenshtein import distance as lev_distance
 from sanipass.app.image.models.sanipass_image import SanipassImage
 from sanipass.app.ocr.ocr_processor import OCRProcessor
 from sanipass.logger import init_logger, logger, console
@@ -91,7 +93,15 @@ def perform_setup(input, input_file, debug):
     validate_options(input, input_file)
 
 
-def get_sensitive_images(input_files, sensitive_data_file):
+def find_words_with_levenshtein_distance(word, text, max_distance):
+    result = []
+    for text_word in text.split():
+        if lev_distance(word, text_word) <= max_distance:
+            result.append(text_word)
+    return result
+
+
+def get_sensitive_images(input_files, sensitive_data_file, max_levenshtein_distance=None):
     sensitive_images = []
     sensitive_data = load_sensitive_data(sensitive_data_file)
 
@@ -111,10 +121,22 @@ def get_sensitive_images(input_files, sensitive_data_file):
         # Find sensitive data
         for ocr_entry in image.ocr_entries:
             for data in sensitive_data:
+                is_sensitive = False
                 if data in ocr_entry.text:
                     logger.debug(f'Found sensitive data in line: {ocr_entry.text}')
                     ocr_entry.sensitive = True
-                    ocr_entry.sensitive_match = data
+                    ocr_entry.sensitive_match.append(data)
+                else:
+                    if max_levenshtein_distance is None:
+                        max_distance = math.ceil(len(data) / 8)
+                    else:
+                        max_distance = max_levenshtein_distance
+
+                    sensitive_words = find_words_with_levenshtein_distance(data, ocr_entry.text, max_distance)
+                    for word in sensitive_words:
+                        logger.debug(f'Found potentially sensitive data: {word}')
+                        ocr_entry.sensitive = True
+                        ocr_entry.sensitive_match.append(word)
 
         number_of_sensitive_entries = len(image.get_sensitive_ocr_entries())
         if number_of_sensitive_entries == 0:
@@ -132,11 +154,29 @@ def main(
     input:Path = TYPER_OPTION_INPUT,
     input_file:typer.FileText = TYPER_OPTION_INPUT_FILE,
     sensitive_data_file:Path = TYPER_OPTION_SENSITIVE_DATA_FILE,
+    max_levenshtein_distance: int = typer.Option(
+        None,
+        '--max-distance',
+        '-m',
+        help='The maximum Levenshtein distance between a sensitive word and the detected word.'
+    ),
     report_only: bool = typer.Option(
         False,
         '--report-only',
         '-r',
         help='Do not modify files, only report files with sensitive data'
+    ),
+    keep_first: int = typer.Option(
+        0,
+        '--keep-first',
+        '-kf',
+        help="Keep the first N characters from being redacted."
+    ),
+    keep_last: int = typer.Option(
+        0,
+        '--keep-last',
+        '-kl',
+        help="Keep the last N characters from being redacted."
     ),
     overwrite: bool = typer.Option(
         False,
@@ -148,7 +188,7 @@ def main(
     perform_setup(input, input_file, debug)
 
     input_files = get_files_to_process(input, input_file)
-    sensitive_images = get_sensitive_images(input_files, sensitive_data_file)
+    sensitive_images = get_sensitive_images(input_files, sensitive_data_file, max_levenshtein_distance)
 
     for image in sensitive_images:
         console.print(image.path)
@@ -157,7 +197,7 @@ def main(
             continue
         else:
             # Redact sensitive data
-            image.redact_sensitive_data()
+            image.redact_sensitive_data(keep_first=keep_first, keep_last=keep_last)
 
             # Save sanitized image
             old_path = Path(image.path)
