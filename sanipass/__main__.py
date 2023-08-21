@@ -110,40 +110,43 @@ def get_sensitive_images(input_files, sensitive_data_file, max_levenshtein_dista
         user_patterns=str(sensitive_data_file))
 
     for file in input_files:
-        logger.info(f'Sanitizing Image: {file}')
+        try:
+            logger.info(f'Sanitizing Image: {file}')
 
-        image = SanipassImage(str(file))
+            image = SanipassImage(str(file))
 
-        # Process OCR data
-        image.add_ocr_entries(ocr_processor.get_ocr_data(image.path))
-        logger.info(f'Found {len(image.ocr_entries)} OCR blocks in {image.path}')
+            # Process OCR data
+            image.add_ocr_entries(ocr_processor.get_ocr_data(image.path))
+            logger.info(f'Found {len(image.ocr_entries)} OCR blocks in {image.path}')
 
-        # Find sensitive data
-        for ocr_entry in image.ocr_entries:
-            for data in sensitive_data:
-                is_sensitive = False
-                if data in ocr_entry.text:
-                    logger.debug(f'Found sensitive data in line: {ocr_entry.text}')
-                    ocr_entry.sensitive = True
-                    ocr_entry.sensitive_match.append(data)
-                else:
-                    if max_levenshtein_distance is None:
-                        max_distance = math.ceil(len(data) / 8)
-                    else:
-                        max_distance = max_levenshtein_distance
-
-                    sensitive_words = find_words_with_levenshtein_distance(data, ocr_entry.text, max_distance)
-                    for word in sensitive_words:
-                        logger.debug(f'Found potentially sensitive data: {word}')
+            # Find sensitive data
+            for ocr_entry in image.ocr_entries:
+                for data in sensitive_data:
+                    is_sensitive = False
+                    if data in ocr_entry.text:
+                        logger.debug(f'Found sensitive data in line: {ocr_entry.text}')
                         ocr_entry.sensitive = True
-                        ocr_entry.sensitive_match.append(word)
+                        ocr_entry.sensitive_match.append(data)
+                    else:
+                        if max_levenshtein_distance is None:
+                            max_distance = math.ceil(len(data) / 8)
+                        else:
+                            max_distance = max_levenshtein_distance
 
-        number_of_sensitive_entries = len(image.get_sensitive_ocr_entries())
-        if number_of_sensitive_entries == 0:
-            logger.info(f'No sensitive data found in {file}')
-        else:
-            logger.info(f'Found {number_of_sensitive_entries} sensitive OCR entries in {file}')
-            sensitive_images.append(image)
+                        sensitive_words = find_words_with_levenshtein_distance(data, ocr_entry.text, max_distance)
+                        for word in sensitive_words:
+                            logger.debug(f'Found potentially sensitive data: {word}')
+                            ocr_entry.sensitive = True
+                            ocr_entry.sensitive_match.append(word)
+
+            number_of_sensitive_entries = len(image.get_sensitive_ocr_entries())
+            if number_of_sensitive_entries == 0:
+                logger.info(f'No sensitive data found in {file}')
+            else:
+                logger.info(f'Found {number_of_sensitive_entries} sensitive OCR entries in {file}')
+                sensitive_images.append(image)
+        except Exception as e:
+            logger.error(f'Error processing {file}: {e}')
 
     logger.info(f'Found {len(sensitive_images)} images containing sensitive information.')
     return sensitive_images
