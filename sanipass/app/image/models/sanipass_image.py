@@ -5,6 +5,7 @@ from sanipass.app.image.models.ocr_entry import OCREntry
 from sanipass.app.image.engines.pil import PIL
 from sanipass.logger import logger
 
+# TODO: Redbox whole string, blackbox using keep first / last
 class SanipassImage:
 
     def __init__(self, path):
@@ -12,6 +13,7 @@ class SanipassImage:
         self.engine = PIL
         self.image = self.engine.open_image(path)
         self.ocr_entries = []
+        self.highlight_entries = []
 
 
     def add_ocr_entries(self, ocr_entries:List):
@@ -30,7 +32,7 @@ class SanipassImage:
                 self.redact_entry(entry, outline_color, fill_color, keep_first, keep_last)
 
 
-    def calculate_bounding_box(self, match, entry:OCREntry, keep_first, keep_last) \
+    def calculate_bounding_box(self, match, entry:OCREntry, keep_first=0, keep_last=0) \
         -> Tuple[int, int, int, int]:
 
         left = 0
@@ -80,7 +82,21 @@ class SanipassImage:
 
     def redact_entry(self, ocr_entry:OCREntry, outline_color="red",
         fill_color="black", keep_first=0, keep_last=0):
+        transparent = (0,0,0,0)
         for match in ocr_entry.sensitive_match:
+            if keep_first != 0 or keep_last != 0:
+                # draw redbox around everything
+                (left, top, right, bottom) = self.calculate_bounding_box(match, ocr_entry)
+                self.engine.draw_rectangle(
+                    self.image,
+                    left=left-2,
+                    top=top-2,
+                    right=right+2,
+                    bottom=bottom+2,
+                    outline_color=outline_color,
+                    fill_color = transparent
+                )
+
             (left, top, right, bottom) = self.calculate_bounding_box(match, ocr_entry, keep_first, keep_last)
             self.engine.draw_rectangle(
                 self.image,
@@ -88,7 +104,8 @@ class SanipassImage:
                 top=top,
                 right=right,
                 bottom=bottom,
-                outline_color=outline_color, fill_color=fill_color
+                outline_color=transparent,
+                fill_color=fill_color
             )
 
 
