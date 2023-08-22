@@ -26,7 +26,9 @@ class PIL:
             bottom += border_addends
 
         draw = ImageDraw.Draw(image, 'RGBA')
-        draw.rectangle([(left, top), (right, bottom)], outline=outline_color, fill=fill_color, width=border_width)
+        draw.rectangle(
+            [(left, top), (right, bottom)], outline=outline_color,
+            fill=fill_color, width=border_width)
 
 
     @staticmethod

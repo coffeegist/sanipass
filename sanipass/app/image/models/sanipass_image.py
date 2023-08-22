@@ -27,7 +27,8 @@ class SanipassImage:
 
     def redact_sensitive_data(self, outline_color="red", fill_color="black",
         keep_first=0, keep_last=0, border_width=3, border_padding=2):
-         for entry in self.ocr_entries:
+
+        for entry in self.ocr_entries:
             if entry.sensitive:
                 self.redact_entry(entry, outline_color, fill_color, keep_first, keep_last, border_width, border_padding)
 
@@ -88,21 +89,20 @@ class SanipassImage:
             self.image = self.image.convert('RGB')
 
         for match in ocr_entry.sensitive_match:
-            if keep_first != 0 or keep_last != 0:
-                # draw redbox around everything
-                (left, top, right, bottom) = self.calculate_bounding_box(match, ocr_entry)
-                self.engine.draw_rectangle(
-                    self.image,
-                    left=left,
-                    top=top,
-                    right=right,
-                    bottom=bottom,
-                    outline_color=outline_color,
-                    border_width = border_width,
-                    border_padding = border_padding
-                )
-                outline_color = None
+            # Draw the red box
+            (left, top, right, bottom) = self.calculate_bounding_box(match, ocr_entry)
+            self.engine.draw_rectangle(
+                self.image,
+                left=left,
+                top=top,
+                right=right,
+                bottom=bottom,
+                outline_color=outline_color,
+                border_width = border_width,
+                border_padding = border_padding
+            )
 
+            # Draw the black box
             (left, top, right, bottom) = self.calculate_bounding_box(match, ocr_entry, keep_first, keep_last)
             self.engine.draw_rectangle(
                 self.image,
@@ -111,11 +111,9 @@ class SanipassImage:
                 right=right,
                 bottom=bottom,
                 fill_color=fill_color,
-                outline_color=outline_color,
                 border_width = border_width,
                 border_padding = border_padding
             )
-
 
 
     def save(self, path=None, overwrite=False):
