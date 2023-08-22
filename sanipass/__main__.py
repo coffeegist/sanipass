@@ -181,6 +181,18 @@ def main(
         '-kl',
         help="Keep the last N characters from being redacted."
     ),
+    border_width: int = typer.Option(
+        3,
+        '--border-width',
+        '-bw',
+        help="Width of the redaction border."
+    ),
+    border_padding: int = typer.Option(
+        2,
+        '--border-padding',
+        '-bp',
+        help="Padding between the redaction border and the sensitive data."
+    ),
     overwrite: bool = typer.Option(
         False,
         '--overwrite',
@@ -200,7 +212,7 @@ def main(
             continue
         else:
             # Redact sensitive data
-            image.redact_sensitive_data(keep_first=keep_first, keep_last=keep_last)
+            image.redact_sensitive_data(keep_first=keep_first, keep_last=keep_last, border_width=border_width, border_padding=border_padding)
 
             # Save sanitized image
             old_path = Path(image.path)
