@@ -122,11 +122,11 @@ def get_sensitive_images(input_files, sensitive_data_file, max_levenshtein_dista
             # Find sensitive data
             for ocr_entry in image.ocr_entries:
                 for data in sensitive_data:
-                    is_sensitive = False
                     if data in ocr_entry.text:
                         logger.debug(f'Found sensitive data in line: {ocr_entry.text}')
                         ocr_entry.sensitive = True
                         ocr_entry.sensitive_match.append(data)
+                        break
                     else:
                         if max_levenshtein_distance is None:
                             max_distance = math.ceil(len(data) / 8)
@@ -138,6 +138,10 @@ def get_sensitive_images(input_files, sensitive_data_file, max_levenshtein_dista
                             logger.debug(f'Found potentially sensitive data: {word}')
                             ocr_entry.sensitive = True
                             ocr_entry.sensitive_match.append(word)
+
+                        # If it's already been marked as sensitive, no need to keep looking
+                        if ocr_entry.sensitive:
+                            break
 
             number_of_sensitive_entries = len(image.get_sensitive_ocr_entries())
             if number_of_sensitive_entries == 0:
