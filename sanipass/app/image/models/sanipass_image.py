@@ -16,8 +16,8 @@ class SanipassImage:
         self.highlight_entries = []
 
 
-    def add_ocr_entries(self, ocr_entries:List):
-        logger.debug([entry.text for entry in ocr_entries])
+    def add_ocr_entries(self, ocr_entries:List[OCREntry]):
+        logger.debug([f"'{entry.text}' - ({entry.left}, {entry.top}, {entry.width}, {entry.height})" for entry in ocr_entries])
         self.ocr_entries.extend(ocr_entries)
 
 
@@ -102,18 +102,19 @@ class SanipassImage:
                 border_padding = border_padding
             )
 
-            # Draw the black box
-            (left, top, right, bottom) = self.calculate_bounding_box(match, ocr_entry, keep_first, keep_last)
-            self.engine.draw_rectangle(
-                self.image,
-                left=left,
-                top=top,
-                right=right,
-                bottom=bottom,
-                fill_color=fill_color,
-                border_width = border_width,
-                border_padding = border_padding
-            )
+            if fill_color:
+                # Draw the black box
+                (left, top, right, bottom) = self.calculate_bounding_box(match, ocr_entry, keep_first, keep_last)
+                self.engine.draw_rectangle(
+                    self.image,
+                    left=left,
+                    top=top,
+                    right=right,
+                    bottom=bottom,
+                    fill_color=fill_color,
+                    border_width = border_width,
+                    border_padding = border_padding
+                )
 
 
     def save(self, path=None, overwrite=False):
