@@ -202,6 +202,11 @@ def main(
         '--overwrite',
         help='Overwrite existing sanitized images'
     ),
+    highlight_only: bool = typer.Option(
+        False,
+        '--highlight-only',
+        help='Highlight sensitive data without redacting'
+    ),
     debug:bool = TYPER_OPTION_DEBUG):
 
     perform_setup(input, input_file, debug)
@@ -215,8 +220,13 @@ def main(
         if report_only:
             continue
         else:
+            if highlight_only:
+                fill_color = None
+            else:
+                fill_color = "black"
+
             # Redact sensitive data
-            image.redact_sensitive_data(keep_first=keep_first, keep_last=keep_last, border_width=border_width, border_padding=border_padding)
+            image.redact_sensitive_data(keep_first=keep_first, keep_last=keep_last, border_width=border_width, border_padding=border_padding, fill_color=fill_color)
 
             # Save sanitized image
             old_path = Path(image.path)
