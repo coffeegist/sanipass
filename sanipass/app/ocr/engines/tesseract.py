@@ -35,13 +35,13 @@ class TesseractOCR:
         config = ''
 
         if self.user_words:
-            config += f' --user-words {self.user_words}'
+            config += f' --user-words "{self.user_words}"'
 
         if self.user_patterns:
-            config += f' --user-patterns {self.user_patterns}'
+            config += f' --user-patterns "{self.user_patterns}"'
 
         if self.whitelisted_characters:
-          config += f' tessedit_char_whitelist=\'{self.whitelisted_characters}\''
+          config += f' tessedit_char_whitelist=\'{self.whitelisted_characters}\'' # This might break things when -c is added
 
         config += f' --psm {self.psm}'
         config += ' -c preserve_interword_spaces=1' # Unsure on this
